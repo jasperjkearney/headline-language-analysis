@@ -1,0 +1,260 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\usepackage{amsmath}
+\usepackage{graphicx}                          % Inserting graphics
+\usepackage{float}                             % Positioning graphics
+\usepackage{caption}                           % Captioning graphics
+\captionsetup{justification=centering}         % Force multi-line captions to be centered
+\captionsetup[table]{skip=5pt}                 % Caption distanced from table
+\usepackage{pgf}                               % Embedding plots as pgf files
+\usepackage[hidelinks]{hyperref}               % Hyperlinks not visible
+\usepackage{minted}                            % For python code snippets
+\usepackage[bottom]{footmisc}                  % Footnotes at bottom of page
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
+\DefineBibliographyStrings{english}{
+    urlseen = {Accessed:}                     % Change format of url reference date.
+}
+
+\title{Analysing Language used in Some Online News Headlines with Python}
+\author{Jasper Kearney}
+\date{\today}
+
+\begin{document}
+
+\makeatletter
+\begin{titlepage}
+    \begin{center}
+        \vfill
+        \huge \textbf{\@title} \\
+        \vspace{1cm}
+        \large \@author \\
+        \vspace{1cm}
+        \small \url{https://github.com/jasperjkearney/headline-language-analysis} \\
+        
+        \begin{figure}[h]
+            \centering
+            \includegraphics[width=\linewidth]{word_cloud.png}
+            \caption{Word cloud generated from words > 4 letters in headlines collected 06/11/2016 - 14/02/2017. Word sizes are proportional to their frequency of occurrence.\\ Created with \url{https://github.com/amueller/word_cloud}.}
+        \end{figure}
+    \end{center}
+\end{titlepage}
+\makeatother
+
+\section{Introduction}
+This was a small project to done to improve knowledge of Python. Over the course of several months, headlines were collected hourly from several major news sites, and some shallow analysis and charts produced for this report.
+
+\section{Method}
+Headlines, along with their associated metadata, were retrieved and stored in a comma-separated values (CSV) file. The file was then used to create a Python class, meaning the data could be evaluated in a variety of ways.
+The headlines collected and analysed were the singular largest and most prominent headlines on the front page of 14 of the most-read\textsuperscript{\cite{top_news_sites}} news websites (Table \ref{tab:headline_sources}).
+
+\begin{table}[H]
+    \centering
+    \caption{Headline sources.}
+    \begin{tabular}{ll}
+        \hline
+        \textbf{News Organisation} & \textbf{Website} \\ 
+        \hline
+        BBC                     & \url{http://bbc.com/news} \\
+        Daily Mail              & \url{http://www.dailymail.co.uk/news/index.html} \\
+        NBC News                & \url{http://www.nbcnews.com/} \\
+        The Washington Post     & \url{https://www.washingtonpost.com/} \\
+        New York Times          & \url{http://www.nytimes.com/} \\
+        The Huffington Post     & \url{http://www.huffingtonpost.com/} \\
+        Fox News                & \url{http://www.foxnews.com/} \\
+        The Guardian            & \url{https://www.theguardian.com/international} \\
+        The Wall Street Journal & \url{http://www.wsj.com/} \\
+        USA Today               & \url{http://www.usatoday.com/} \\
+        LA Times                & \url{http://www.latimes.com/} \\
+        India Times             & \url{http://www.indiatimes.com/} \\
+        Bloomberg               & \url{http://www.bloomberg.com/} \\
+        Yahoo                   & \url{https://www.yahoo.com/news/} \\
+        \hline
+    \end{tabular}
+    \label{tab:headline_sources}
+\end{table}
+
+\subsection{Collecting Headlines}
+The Python script \texttt{store\_current\_headlines.py} retrieves headlines from the news sources in Table \ref{tab:headline_sources}, and writes them - along with metadata - to a CSV file (Figure \ref{fig:csv}). \\
+It utilises the \texttt{urllib.request}\footnote{\url{https://docs.python.org/3/library/urllib.request.html}} module from the Python standard library to fetch HTML. The headline is then retrieved from the HTML using the Beautiful Soup library\footnote{\url{https://www.crummy.com/software/BeautifulSoup/}} (which in turn uses \texttt{html.parser}\footnote{\url{https://docs.python.org/3/library/html.parser.html}} to parse the html). \\
+This script was run every hour for 100 days from 06/11/2016 to 15/04/2017, making for a total of 51,618 stored headlines, although not all are unique, due to headlines changing less frequently than the polling period.
+
+\begin{figure}[H]
+    \centering
+    {\small
+    \begin{tabular}{|c|c|c|c}
+        \hline
+                            &Source 1          &Source 2         &\ldots \\
+        \hline
+        2016-11-06 12:00:04&\textit{headline} &\textit{headline}&\ldots \\
+        \hline
+        2016-11-06 13:00:04&\textit{headline} &\textit{headline}&\ldots \\
+        \hline
+        2016-11-06 14:00:04&\textit{headline} &\textit{headline}&\ldots \\
+        \hline
+        2016-11-06 15:00:04&\textit{headline} &\textit{headline}&\ldots \\
+        \hline
+        $\vdots$&$\vdots$&$\vdots$& \\
+    \end{tabular}
+    }
+    \caption{The structure of the CSV file that stored retrieved headlines.}
+    \label{fig:csv}
+\end{figure}
+
+\subsection{Moving the data into Python}
+The file \texttt{HeadlineData.py} defines the two Python classes that are used to store and manipulate the data. The \texttt{Headline} class stores a single headline with metadata (data and time of publication, source).
+
+\begin{minted}{python}
+>>> headline1
+Headline('Trump beats Clinton to take White House', \
+         'BBC', datetime.datetime(2016, 11, 9, 10, 0))
+\end{minted}
+
+The \texttt{HeadlineData} class is comprised of \texttt{Headline} objects and stores all data that was collected, it has methods to allow for sorting of the headlines by source, date etc., and includes the classmethod \texttt{from\_file}, which creates a \texttt{HeadlineData} object by importing the data from the CSV file.
+
+\subsection{Evaluating Headline Sentiments}
+In order to evaluate the sentiment of each headline, the VADER Sentiment Analysis\footnote{\url{https://github.com/cjhutto/vaderSentiment}} tool was used, it is a is a lexicon and rule-based sentiment analysis tool\textsuperscript{\cite{VADER}}, and enables each headline to be scored on its positivity or negativity. Each headline string was given sentiment polarity scores using the tool, and these were stored in an attribute of the Headline objects.
+
+\section{Results}
+
+In total, 51,618 \texttt{Headline} objects were created by collecting headlines every hour from 06/11/2016 to 15/04/2017. The total number of unique headlines was 12,926. \\
+Some organisations updated their main headline more frequently than others (Figure \ref{fig:update_time_vs_organisation}), so had a larger contribution to the total number of unique headlines. 
+
+\begin{figure}[H]
+    \centering
+    \input{update_time_vs_organisation.pgf}
+    \caption{The average lifetime of headlines from different organisations.}
+    \label{fig:update_time_vs_organisation}
+\end{figure}
+
+\subsection{Vocabulary}
+Table \ref{tab:most_common_words} shows the most common words from all the unique headlines that were collected. To investigate if key dates in the American presidential election process affected the number of usages of `Trump', a plot of its usage against time was generated (Figure \ref{fig:trump_frequency_vs_time}).
+
+\begin{table}[H]
+    \centering
+    \caption{The 10 most commonly occurring words $>4$ letters long.}
+    \begin{tabular}{llc}
+        \hline
+        \textbf{Rank} & \textbf{Word} & \textbf{Proportion of unique} \\
+                      &               & \textbf{headlines containing} \\
+        \hline
+        1. & trump & 28.918\% \\
+        2. & trump's & 7.233\% \\
+        3. & after & 6.916\% \\
+        4. & house & 4.255\% \\
+        5. & russia & 4.023\% \\
+        6. & obama & 3.288\% \\
+        7. & white & 3.009\% \\
+        8. & attack & 2.963\% \\
+        9. & president & 2.329\% \\
+        10. & travel & 2.274\% \\
+        \hline
+    \end{tabular}
+    \label{tab:most_common_words}
+\end{table}
+
+
+\begin{figure}[H]
+    \centering
+    \input{trump_frequency_vs_time.pgf}
+    \caption{Proportion of headlines per day containing the string `trump'.}
+    \label{fig:trump_frequency_vs_time}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \input{word_frequency_vs_time.pgf}
+    \caption{Changes in the usage of some other proper nouns. \\ \textit{1. Trump accuses Obama administration of wiretapping. (5/3/2017)}}
+    \label{fig:word_frequency_vs_time}
+\end{figure}
+
+
+\subsection{VADER Sentiment Scores}
+Figure \ref{fig:score_distribution_plot} shows the score distribution for all unique headlines. 
+
+\begin{figure}[H]
+    \centering
+    \input{score_distribution_plot.pgf}
+    \caption{The distribution created by scoring all headlines using the VADER sentiment analyser. Scores above 0.5 show a positive sentiment, below -0.5 a negative one.}
+    \label{fig:score_distribution_plot}
+\end{figure}
+
+\noindent
+The headlines with the most positive, and the most negative sentiment can be found:
+\begin{minted}{python}
+>>> # Import the pickled HeadlineData object from file
+>>> import pickle
+>>> headline_data = pickle.load(open('headline_data.p', 'rb'))
+>>> headlines = list(headline_data.unique_headlines())
+
+>>> # Print the most positive and most negative headlines:
+>>> print(max(headlines, key=lambda x: x.vader_sentiment_scores['compound']))
+"""
+'We're going to be like gypsies - except our cars are insured': Clarkson 
+takes full advantage of his new freedom from the BBC as petrolheads 
+declare his £160m Grand Tour BETTER than Top Gear
+ -Daily Mail
+2016-11-18
+"""
+>>> print(min(headlines, key=lambda x: x.vader_sentiment_scores['compound']))
+"""
+Turkish gunman who killed British boy is shot dead at his own wedding 
+six days after being released from prison as the father of the dead
+two-year-old says he 'doesn't take any joy' from the killing
+ -Daily Mail
+2017-03-08
+"""
+\end{minted}
+
+
+\noindent
+To see what factors affected the VADER sentiment score of a headline, plots vs. the source of the headline and its length were produced. (Figures \ref{fig:score_vs_organisation} \& \ref{fig:score_vs_length})
+
+\begin{figure}[H]
+    \centering
+    \input{score_vs_organisation.pgf}
+    \caption{A plot of the VADER Sentiment score distributions for each news organisation.}
+    \label{fig:score_vs_organisation}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \input{score_vs_length.pgf}
+    \caption{Plot showing distribution of headline lengths, as well as the sentiment scores received for headlines of each length.}
+    \label{fig:score_vs_length}
+\end{figure}
+
+Finally, in order to investigate if certain words were generally associated with an overall positive or negative sentiment, each word was given a weighted score based on the VADER sentiment scores of all the headlines which it appeared in, for more detail see \texttt{word\_stigma.py}.
+Table \ref{tab:word_stigma} shows the results, so for example, headlines containing the word 'suicide', had a VADER sentiment score of -0.861 on average.
+
+\begin{table}[H]
+    \centering
+    \caption{Words with the largest absolute average sentiment score for all headlines that they appear in.}
+    \begin{tabular}{lc|lc}
+        \hline
+        \multicolumn{2}{c}{\textbf{Negative}} & \multicolumn{2}{c}{\textbf{Positive}} \\
+        \hline
+        suicide & -0.861 & best & 0.679 \\
+        milan & -0.846 & awards & 0.609 \\
+        feared & -0.820 & confidence & 0.603 \\
+        rape & -0.814 & optimism & 0.603 \\
+        horror & -0.813 & wins & 0.575 \\
+        terrorist & -0.808 & gain & 0.574 \\
+        refusing & -0.785 & super & 0.558 \\
+        injured & -0.785 & win & 0.521 \\
+        killed & -0.779 & freedom & 0.511 \\
+        tragedy & -0.773 & commitment & 0.500 \\
+        \hline
+    \end{tabular}
+    \label{tab:word_stigma}
+\end{table}
+
+\printbibliography
+
+\end{document}

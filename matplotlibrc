@@ -1,0 +1,7 @@
+backend             : tkagg
+font.family         : serif
+text.usetex         : True
+pgf.texsystem       : pdflatex
+figure.figsize      : 6, 4
+figure.autolayout   : True
+axes.axisbelow      : True

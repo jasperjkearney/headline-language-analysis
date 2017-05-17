@@ -1,0 +1,14 @@
+BBC,http://bbc.com/news,span,class,title-link__title-text
+Daily Mail,http://www.dailymail.co.uk/news/index.html,h2,class,linkro-darkred
+NBC News,http://www.nbcnews.com/,div,class,panel-txt panel-txt_hero
+The Washington Post,https://www.washingtonpost.com/,a,data-pb-field,web_headline
+New York Times,http://www.nytimes.com/,h2,class,story-heading
+The Huffington Post,http://www.huffingtonpost.com/?country=US,h1,class,splash__header splash__header--title
+Fox News,http://www.foxnews.com/,h1,,
+The Guardian,https://www.theguardian.com/international,span,class,u-faux-block-link__cta fc-item__headline
+The Wall Street Journal,http://www.wsj.com/,a,class,wsj-headline-link
+USA Today,http://www.usatoday.com/,p,class,hfwmm-primary-image-hed
+LA Times,http://www.latimes.com/,h2,class,trb_outfit_primaryItem_article_title trb_outfit_featuredArticleTitle
+India Times,http://www.indiatimes.com/,h1,,
+Bloomberg,http://www.bloomberg.com/,div,class,hero-v6-story__headline
+Yahoo,https://www.yahoo.com/news/,h2,,
